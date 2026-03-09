@@ -86,3 +86,31 @@ export function useDecrement() {
     },
   });
 }
+
+
+// ====================================
+// Add Category (POST) ✅
+// ====================================
+interface AddCategory {
+  name: string;
+  description: string;
+}
+
+export function useAddCategory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (body: AddCategory) => {
+      const {data} = await api.post("/api/Categories", body);
+      const {value, error, IsSuccess} = data;
+
+      if(!IsSuccess) console.log(error);
+
+      return value
+    },
+    onSuccess: () => {
+      // Invalida la query de productos para que se recargue automáticamente
+      queryClient.invalidateQueries({ queryKey: ["Categories"] });
+    },
+  });
+}
