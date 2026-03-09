@@ -1,23 +1,49 @@
 import { useSyncExternalStore } from "react"
 import { useQuery } from "@tanstack/react-query";
-import {
-  subscribe,
-  getCategories,
-  getProducts,
-  getMovements,
-} from "@/lib/inventory-store"
 import api from "./api/api";
 
+
 export function useCategories() {
-  return useSyncExternalStore(subscribe, getCategories, getCategories)
+  return useQuery({
+    queryKey: ["Categories"],
+    queryFn: async () => {
+      const res = await api.get("api/Categories");
+      return res.data;
+    },
+  });
 }
 
 export function useProducts() {
-  return useSyncExternalStore(subscribe, getProducts, getProducts)
+  return useQuery({
+    queryKey: ["Products"],
+    queryFn: async () => {
+      const { data } = await api.get("api/Products");
+      const { isSuccess, value, error } = data;
+      if (!isSuccess) {
+        return [];
+      }
+
+      return value;
+    },
+  });
 }
 
-export function useMovements() {
-  return useSyncExternalStore(subscribe, getMovements, getMovements)
+
+
+
+export function useHisorialStock() {
+  return useQuery({
+    queryKey: ["HistorialStock"],
+    queryFn: async () => {
+      const { data } = await api.get("api/Stock");
+      const { isSuccess, value, error } = data;
+      if (!isSuccess) {
+        return [];
+      }
+
+      return value;
+    },
+  });
 }
 export function useDashboardInfo() {
   return useQuery({
@@ -25,6 +51,30 @@ export function useDashboardInfo() {
     queryFn: async () => {
       const res = await api.get("api/ResumenDashboard");
       return res.data;
+    },
+  });
+}
+
+export function useGetLowProducts() {
+  return useQuery({
+    queryKey: ["low-products"],
+    queryFn: async () => {
+      const res = await api.get("api/ResumenDashboard/low-products");
+      return res.data;
+    },
+  });
+}
+export function useLastMovements() {
+  return useQuery({
+    queryKey: ["LastMovements"],
+    queryFn: async () => {
+      const { data } = await api.get("api/Stock/LastMovements");
+      const { isSuccess, value, error } = data;
+      if (!isSuccess) {
+        return [];
+      }
+
+      return value;
     },
   });
 }

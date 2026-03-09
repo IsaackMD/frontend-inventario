@@ -3,8 +3,18 @@
 import { useState } from "react"
 import { Plus, Trash2, Tag } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Table,
@@ -14,16 +24,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+
 import { useCategories, useProducts } from "@/hooks/use-inventory"
-import { addCategory, deleteCategory } from "@/lib/inventory-store"
+import { Category,  Product } from "@/lib/inventory-store"
+import { AddCategory } from "./add-category"
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("es-MX", {
@@ -34,8 +38,8 @@ function formatDate(iso: string) {
 }
 
 export function CategoriesContent() {
-  const categories = useCategories()
-  const products = useProducts()
+  const { data: categories } = useCategories()
+  const { data: products } = useProducts()
   const [addOpen, setAddOpen] = useState(false)
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
@@ -43,7 +47,7 @@ export function CategoriesContent() {
 
   const handleAdd = () => {
     if (!name.trim()) return
-    addCategory(name.trim(), description.trim())
+    // addCategory(name.trim(), description.trim())
     setName("")
     setDescription("")
     setAddOpen(false)
@@ -51,15 +55,15 @@ export function CategoriesContent() {
 
   const handleDelete = () => {
     if (!deleteTarget) return
-    deleteCategory(deleteTarget)
+    // deleteCategory(deleteTarget)
     setDeleteTarget(null)
   }
 
   const getProductCount = (categoryId: string) => {
-    return products.filter((p) => p.categoryId === categoryId).length
+    return (products ?? []).filter((p: Product) => p.categoryId === categoryId).length
   }
 
-  const deleteTargetCategory = categories.find((c) => c.id === deleteTarget)
+  const deleteTargetCategory = (categories ?? []).find((c: Category) => c.id === deleteTarget)
   const deleteTargetProductCount = deleteTarget ? getProductCount(deleteTarget) : 0
 
   return (
@@ -92,14 +96,14 @@ export function CategoriesContent() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {categories.length === 0 ? (
+                {categories?.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                       No hay categorias registradas.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  categories.map((cat) => {
+                  categories?.map((cat: Category) => {
                     const count = getProductCount(cat.id)
                     return (
                       <TableRow key={cat.id}>
@@ -111,17 +115,17 @@ export function CategoriesContent() {
                             <span className="font-medium text-card-foreground">{cat.name}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-muted-foreground max-w-[300px] truncate">
+                        {/* <TableCell className="text-muted-foreground max-w-[300px] truncate">
                           {cat.description || "Sin descripcion"}
-                        </TableCell>
+                        </TableCell> */}
                         <TableCell className="text-center">
                           <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-md bg-muted text-sm font-medium text-muted-foreground">
                             {count}
                           </span>
                         </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
+                        {/* <TableCell className="text-muted-foreground text-sm">
                           {formatDate(cat.createdAt)}
-                        </TableCell>
+                        </TableCell> */}
                         <TableCell className="text-center">
                           <Button
                             size="sm"
@@ -143,12 +147,12 @@ export function CategoriesContent() {
 
           {/* Mobile cards */}
           <div className="md:hidden flex flex-col gap-3 p-4">
-            {categories.length === 0 ? (
+            {categories?.length === 0 ? (
               <p className="text-center py-8 text-muted-foreground text-sm">
                 No hay categorias registradas.
               </p>
             ) : (
-              categories.map((cat) => {
+              categories?.map((cat: Category) => {
                 const count = getProductCount(cat.id)
                 return (
                   <div
@@ -160,11 +164,11 @@ export function CategoriesContent() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-card-foreground">{cat.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">
+                      {/* <p className="text-xs text-muted-foreground truncate">
                         {cat.description || "Sin descripcion"}
-                      </p>
+                      </p> */}
                       <p className="text-xs text-muted-foreground mt-1">
-                        {count} producto{count !== 1 ? "s" : ""} &middot; {formatDate(cat.createdAt)}
+                        {count} producto{count !== 1 ? "s" : ""} &middot;
                       </p>
                     </div>
                     <Button
@@ -184,67 +188,17 @@ export function CategoriesContent() {
         </CardContent>
       </Card>
 
-      {/* Add Category Dialog */}
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-card-foreground">Nueva Categoria</DialogTitle>
-            <DialogDescription>
-              Agrega una nueva categoria para organizar tus productos.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-4 py-2">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="cat-name">Nombre</Label>
-              <Input
-                id="cat-name"
-                placeholder="Ej: Herramientas"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="cat-desc">Descripcion (opcional)</Label>
-              <Input
-                id="cat-desc"
-                placeholder="Descripcion breve de la categoria"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleAdd} disabled={!name.trim()}>
-              Crear Categoria
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AddCategory
+        addOpen={addOpen}
+        setAddOpen={setAddOpen}
+        description={description}
+        setDescription={setDescription}
+        handleAdd={handleAdd}
+        name={name}
+        setName={setName}
+      ></AddCategory>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-card-foreground">Eliminar Categoria</DialogTitle>
-            <DialogDescription>
-              {deleteTargetProductCount > 0
-                ? `La categoria "${deleteTargetCategory?.name}" tiene ${deleteTargetProductCount} producto${deleteTargetProductCount !== 1 ? "s" : ""} asociado${deleteTargetProductCount !== 1 ? "s" : ""}. Los productos no seran eliminados pero quedaran sin categoria.`
-                : `Estas seguro de que deseas eliminar la categoria "${deleteTargetCategory?.name}"?`}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
-              Cancelar
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Eliminar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
     </div>
   )
 }

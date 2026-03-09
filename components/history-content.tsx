@@ -13,7 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { useMovements } from "@/hooks/use-inventory"
+import { useHisorialStock } from "@/hooks/use-inventory"
+import { StockMovement } from "@/lib/inventory-store"
 
 function formatDate(iso: string) {
   const d = new Date(iso)
@@ -27,15 +28,14 @@ function formatDate(iso: string) {
 }
 
 export function HistoryContent() {
-  const movements = useMovements()
+  const { data: movements } = useHisorialStock()
   const [search, setSearch] = useState("")
-  const [filterType, setFilterType] = useState<"all" | "entrada" | "salida">("all")
+  const [filterType, setFilterType] = useState<"all" | "In" | "Out">("all")
 
-  const filtered = movements.filter((m) => {
+  const filtered = (movements ?? []).filter((m:StockMovement) => {
     const matchesSearch =
-      m.productName.toLowerCase().includes(search.toLowerCase()) ||
-      m.note.toLowerCase().includes(search.toLowerCase())
-    const matchesType = filterType === "all" || m.type === filterType
+      m.producto.name.toLowerCase().includes(search.toLowerCase())
+    const matchesType = filterType === "all" || m.movementType === filterType
     return matchesSearch && matchesType
   })
 
@@ -62,12 +62,12 @@ export function HistoryContent() {
             </div>
             <select
               value={filterType}
-              onChange={(e) => setFilterType(e.target.value as "all" | "entrada" | "salida")}
+              onChange={(e) => setFilterType(e.target.value as "all" | "In" | "Out")}
               className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground"
             >
               <option value="all">Todos los movimientos</option>
-              <option value="entrada">Solo entradas</option>
-              <option value="salida">Solo salidas</option>
+              <option value="In">Solo entradas</option>
+              <option value="Out">Solo salidas</option>
             </select>
           </div>
         </CardHeader>
@@ -82,23 +82,22 @@ export function HistoryContent() {
                   <TableHead className="text-center">Cantidad</TableHead>
                   <TableHead className="text-center">Stock Anterior</TableHead>
                   <TableHead className="text-center">Stock Nuevo</TableHead>
-                  <TableHead>Nota</TableHead>
                   <TableHead>Fecha</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.length === 0 ? (
+                {filtered?.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       No se encontraron movimientos.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filtered.map((mov) => (
+                  filtered?.map((mov: StockMovement) => (
                     <TableRow key={mov.id}>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          {mov.type === "entrada" ? (
+                          {mov.movementType === "In" ? (
                             <ArrowUpCircle className="h-4 w-4 text-accent" />
                           ) : (
                             <ArrowDownCircle className="h-4 w-4 text-destructive" />
@@ -106,24 +105,23 @@ export function HistoryContent() {
                           <Badge
                             variant="outline"
                             className={
-                              mov.type === "entrada"
+                              mov.movementType === "In"
                                 ? "bg-accent/15 text-accent border-accent/30"
                                 : "bg-destructive/15 text-destructive border-destructive/30"
                             }
                           >
-                            {mov.type === "entrada" ? "Entrada" : "Salida"}
+                            {mov.movementType === "In" ? "Entrada" : "Salida"}
                           </Badge>
                         </div>
                       </TableCell>
-                      <TableCell className="font-medium text-card-foreground">{mov.productName}</TableCell>
+                      <TableCell className="font-medium text-card-foreground">{mov.producto.name}</TableCell>
                       <TableCell className="text-center font-semibold text-card-foreground">
-                        {mov.type === "entrada" ? "+" : "-"}{mov.quantity}
+                        {mov.movementType === "In" ? "+" : "-"}{mov.quantity}
                       </TableCell>
-                      <TableCell className="text-center text-muted-foreground">{mov.previousStock}</TableCell>
-                      <TableCell className="text-center font-medium text-card-foreground">{mov.newStock}</TableCell>
-                      <TableCell className="text-muted-foreground max-w-[200px] truncate">{mov.note}</TableCell>
+                      <TableCell className="text-center text-muted-foreground">{mov.oldStock}</TableCell>
+                      <TableCell className="text-center font-medium text-card-foreground">{mov.movementType === "In" ? (mov.oldStock+mov.quantity) : (mov.oldStock-mov.quantity)}</TableCell>
                       <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
-                        {formatDate(mov.date)}
+                        {formatDate(mov.movementDate)}
                       </TableCell>
                     </TableRow>
                   ))
@@ -134,19 +132,19 @@ export function HistoryContent() {
 
           {/* Mobile cards */}
           <div className="md:hidden flex flex-col gap-3 p-4">
-            {filtered.length === 0 ? (
+            {filtered?.length === 0 ? (
               <p className="text-center py-8 text-muted-foreground text-sm">
                 No se encontraron movimientos.
               </p>
             ) : (
-              filtered.map((mov) => (
+              filtered?.map((mov:StockMovement) => (
                 <div
                   key={mov.id}
                   className="flex flex-col gap-2 p-4 rounded-lg border border-border bg-card"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      {mov.type === "entrada" ? (
+                      {mov.movementType === "In" ? (
                         <ArrowUpCircle className="h-4 w-4 text-accent" />
                       ) : (
                         <ArrowDownCircle className="h-4 w-4 text-destructive" />
@@ -154,28 +152,25 @@ export function HistoryContent() {
                       <Badge
                         variant="outline"
                         className={
-                          mov.type === "entrada"
+                          mov.movementType === "In"
                             ? "bg-accent/15 text-accent border-accent/30"
                             : "bg-destructive/15 text-destructive border-destructive/30"
                         }
                       >
-                        {mov.type === "entrada" ? "Entrada" : "Salida"}
+                        {mov.movementType === "In" ? "Entrada" : "Salida"}
                       </Badge>
                     </div>
                     <span className="text-sm font-bold text-card-foreground">
-                      {mov.type === "entrada" ? "+" : "-"}{mov.quantity}
+                      {mov.movementType === "In" ? "+" : "-"}{mov.quantity}
                     </span>
                   </div>
-                  <p className="text-sm font-medium text-card-foreground">{mov.productName}</p>
+                  <p className="text-sm font-medium text-card-foreground">{mov.producto.name}</p>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>
-                      {mov.previousStock} &rarr; {mov.newStock}
+                      {mov.oldStock} &rarr; {mov.movementType === "In" ? (mov.oldStock+mov.quantity) : (mov.oldStock-mov.quantity)}
                     </span>
-                    <span>{formatDate(mov.date)}</span>
+                    <span>{formatDate(mov.movementDate)}</span>
                   </div>
-                  {mov.note && (
-                    <p className="text-xs text-muted-foreground truncate">{mov.note}</p>
-                  )}
                 </div>
               ))
             )}

@@ -3,24 +3,19 @@
 import { Package, AlertTriangle, Tag, ArrowDownUp } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { useProducts, useCategories, useMovements, useDashboardInfo } from "@/hooks/use-inventory"
-import { getCategoryName } from "@/lib/inventory-store"
+import { useProducts, useCategories, useHisorialStock, useDashboardInfo, useGetLowProducts, useLastMovements } from "@/hooks/use-inventory"
+import { StockMovement } from "@/lib/inventory-store"
 import { LottieIcon } from "./icons/lottie-icon"
 import { log } from "console"
+import { StockBadge } from "./Badge/BadgeLowProducts"
 
 export function DashboardContent() {
   const products = useProducts()
   const categories = useCategories()
-  const movements = useMovements()
-  const {data}  = useDashboardInfo()
-
-  console.log("Data:",data);
-  
-  const totalProducts = products.length
-  const totalStock = products.reduce((sum, p) => sum + p.quantity, 0)
-  const lowStockProducts = products.filter((p) => p.quantity <= p.minStock && p.quantity > 0)
-  const outOfStockProducts = products.filter((p) => p.quantity === 0)
-
+  const movements = useHisorialStock()
+  const { data } = useDashboardInfo()
+  const { data: lowStockProducts } = useGetLowProducts();
+  const { data: LastMovements } = useLastMovements();
 
 
   const stats = [
@@ -54,8 +49,6 @@ export function DashboardContent() {
     },
   ]
 
-  const recentMovements = movements.slice(0, 5)
-
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -87,25 +80,25 @@ export function DashboardContent() {
             <CardTitle className="text-base text-card-foreground">Movimientos Recientes</CardTitle>
           </CardHeader>
           <CardContent>
-            {recentMovements.length === 0 ? (
+            {LastMovements?.length === 0 ? (
               <p className="text-sm text-muted-foreground">No hay movimientos registrados.</p>
             ) : (
               <ul className="flex flex-col gap-3">
-                {recentMovements.map((mov) => (
+                {LastMovements?.map((mov: StockMovement) => (
                   <li key={mov.id} className="flex items-center justify-between gap-2">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-card-foreground truncate">{mov.productName}</p>
-                      <p className="text-xs text-muted-foreground">{mov.note}</p>
+                      <p className="text-sm font-medium text-card-foreground truncate">{mov.producto.name}</p>
+                      <p className="text-xs text-muted-foreground">{mov.producto.description}</p>
                     </div>
                     <Badge
                       className={
-                        mov.type === "entrada"
+                        mov.movementType === "In"
                           ? "bg-accent/15 text-accent border-accent/30 hover:bg-accent/15"
                           : "bg-destructive/15 text-destructive border-destructive/30 hover:bg-destructive/15"
                       }
                       variant="outline"
                     >
-                      {mov.type === "entrada" ? "+" : "-"}{mov.quantity}
+                      {mov.movementType === "In" ? "+" : "-"}{mov.quantity}
                     </Badge>
                   </li>
                 ))}
@@ -119,30 +112,19 @@ export function DashboardContent() {
             <CardTitle className="text-base text-card-foreground">Alertas de Stock</CardTitle>
           </CardHeader>
           <CardContent>
-            {outOfStockProducts.length === 0 && lowStockProducts.length === 0 ? (
+            {lowStockProducts?.length === 0 ? (
               <p className="text-sm text-muted-foreground">Todo el inventario esta en orden.</p>
             ) : (
               <ul className="flex flex-col gap-3">
-                {outOfStockProducts.map((p) => (
-                  <li key={p.id} className="flex items-center justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-card-foreground truncate">{p.name}</p>
-                      <p className="text-xs text-muted-foreground">{getCategoryName(p.categoryId)}</p>
-                    </div>
-                    <Badge variant="destructive">Agotado</Badge>
-                  </li>
-                ))}
-                {lowStockProducts.map((p) => (
+                {lowStockProducts?.map((p: any) => (
                   <li key={p.id} className="flex items-center justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-card-foreground truncate">{p.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {p.quantity} / {p.minStock} min
+                        {p.stock} / {p.stockMin} min
                       </p>
                     </div>
-                    <Badge className="bg-[hsl(38,92%,50%)]/15 text-[hsl(38,92%,40%)] border-[hsl(38,92%,50%)]/30 hover:bg-[hsl(38,92%,50%)]/15" variant="outline">
-                      Bajo
-                    </Badge>
+                    <StockBadge stock={p.stock} stockMin={p.stockMin}></StockBadge>
                   </li>
                 ))}
               </ul>

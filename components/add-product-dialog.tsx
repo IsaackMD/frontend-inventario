@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Dialog,
   DialogContent,
@@ -19,42 +20,66 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { addProduct } from "@/lib/inventory-store"
-import { useCategories } from "@/hooks/use-inventory"
+import { useCreateProduct } from "@/hooks/UseFetch"
+
+interface Category {
+  id: string
+  name: string
+}
 
 interface AddProductDialogProps {
+  categories: Category[]
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-export function AddProductDialog({ open, onOpenChange }: AddProductDialogProps) {
-  const categories = useCategories()
+export function AddProductDialog({ categories, open, onOpenChange }: AddProductDialogProps) {
   const [name, setName] = useState("")
-  const [sku, setSku] = useState("")
+  const [description, setDescription] = useState("")
+  const [stock, setStock] = useState("")
+  const [stockmin, setStockmin] = useState("")
   const [categoryId, setCategoryId] = useState("")
-  const [quantity, setQuantity] = useState("")
-  const [minStock, setMinStock] = useState("")
-  const [price, setPrice] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleSubmit = () => {
-    if (!name || !sku || !categoryId) return
+  const createProduct = useCreateProduct()
 
-    addProduct(
-      name,
-      sku,
-      categoryId,
-      Number(quantity) || 0,
-      Number(minStock) || 0,
-      Number(price) || 0
-    )
+  const handleSubmit = async () => {
+    if (!name || !categoryId) return
 
-    setName("")
-    setSku("")
-    setCategoryId("")
-    setQuantity("")
-    setMinStock("")
-    setPrice("")
-    onOpenChange(false)
+    setIsLoading(true)
+
+    try {
+      const response = await createProduct.mutateAsync({
+        name,
+        description,
+        stock: Number(stock) || 0,
+        stockmin: Number(stockmin) || 0,
+        CategoryId: categoryId,
+      });
+
+      if (!response.isSuccess) {
+        throw new Error("Error al crear el producto")
+      }
+
+      // Limpiar el formulario
+      setName("")
+      setDescription("")
+      setStock("")
+      setStockmin("")
+      setCategoryId("")
+      onOpenChange(false)
+
+      // Aquí puedes agregar un toast o notificación de éxito
+      console.log("✅ Producto creado exitosamente")
+
+      // Opcional: Recargar la lista de productos
+      window.location.reload() // O mejor, usa un callback para actualizar el estado del padre
+    } catch (error) {
+      console.error("❌ Error:", error)
+      // Aquí puedes mostrar un toast de error
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -63,12 +88,13 @@ export function AddProductDialog({ open, onOpenChange }: AddProductDialogProps) 
         <DialogHeader>
           <DialogTitle className="text-card-foreground">Agregar Producto</DialogTitle>
           <DialogDescription>
-            Completa la informacion del nuevo producto.
+            Completa la información del nuevo producto.
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2">
+          {/* Nombre */}
           <div className="flex flex-col gap-2 sm:col-span-2">
-            <Label htmlFor="prod-name">Nombre del producto</Label>
+            <Label htmlFor="prod-name">Nombre del producto *</Label>
             <Input
               id="prod-name"
               placeholder="Ej: Monitor Samsung 27"
@@ -76,23 +102,28 @@ export function AddProductDialog({ open, onOpenChange }: AddProductDialogProps) 
               onChange={(e) => setName(e.target.value)}
             />
           </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="prod-sku">SKU</Label>
-            <Input
-              id="prod-sku"
-              placeholder="Ej: ELEC-004"
-              value={sku}
-              onChange={(e) => setSku(e.target.value)}
+
+          {/* Descripción */}
+          <div className="flex flex-col gap-2 sm:col-span-2">
+            <Label htmlFor="prod-description">Descripción</Label>
+            <Textarea
+              id="prod-description"
+              placeholder="Descripción del producto"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
             />
           </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="prod-category">Categoria</Label>
+
+          {/* Categoría */}
+          <div className="flex flex-col gap-2 sm:col-span-2">
+            <Label htmlFor="prod-category">Categoría *</Label>
             <Select value={categoryId} onValueChange={setCategoryId}>
               <SelectTrigger id="prod-category">
                 <SelectValue placeholder="Seleccionar" />
               </SelectTrigger>
               <SelectContent>
-                {categories.map((cat) => (
+                {categories?.map((cat) => (
                   <SelectItem key={cat.id} value={cat.id}>
                     {cat.name}
                   </SelectItem>
@@ -100,47 +131,47 @@ export function AddProductDialog({ open, onOpenChange }: AddProductDialogProps) 
               </SelectContent>
             </Select>
           </div>
+
+          {/* Stock */}
           <div className="flex flex-col gap-2">
-            <Label htmlFor="prod-qty">Cantidad inicial</Label>
+            <Label htmlFor="prod-stock">Stock inicial</Label>
             <Input
-              id="prod-qty"
+              id="prod-stock"
               type="number"
               min="0"
               placeholder="0"
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
+              value={stock}
+              onChange={(e) => setStock(e.target.value)}
             />
           </div>
+
+          {/* Stock Mínimo */}
           <div className="flex flex-col gap-2">
-            <Label htmlFor="prod-min">Stock minimo</Label>
+            <Label htmlFor="prod-stockmin">Stock mínimo</Label>
             <Input
-              id="prod-min"
+              id="prod-stockmin"
               type="number"
               min="0"
               placeholder="0"
-              value={minStock}
-              onChange={(e) => setMinStock(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-2 sm:col-span-2">
-            <Label htmlFor="prod-price">Precio unitario</Label>
-            <Input
-              id="prod-price"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="0.00"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
+              value={stockmin}
+              onChange={(e) => setStockmin(e.target.value)}
             />
           </div>
         </div>
+
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)}
+            disabled={isLoading}
+          >
             Cancelar
           </Button>
-          <Button onClick={handleSubmit} disabled={!name || !sku || !categoryId}>
-            Agregar Producto
+          <Button 
+            onClick={handleSubmit} 
+            disabled={!name || !categoryId || isLoading}
+          >
+            {isLoading ? "Guardando..." : "Agregar Producto"}
           </Button>
         </DialogFooter>
       </DialogContent>
