@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Package, History, Tag, LayoutDashboard } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { LottieIcon } from "./icons/lottie-icon"
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -18,12 +19,12 @@ export function AppSidebar() {
   return (
     <aside className="hidden md:flex w-64 flex-col bg-sidebar-background text-sidebar-foreground border-r border-sidebar-border min-h-screen">
       <div className="flex items-center gap-3 px-6 py-5 border-b border-sidebar-border">
-        <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary">
-          <Package className="h-5 w-5 text-primary-foreground" />
+        <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-second">
+          <LottieIcon src="/MagicBox.json" className="w-12 h-12" />
         </div>
         <div>
-          <h1 className="text-sm font-semibold text-sidebar-primary-foreground text-black">Inventario</h1>
-          <p className="text-xs text-sidebar-foreground/60 text-black">Panel Admin</p>
+          <h1 className="text-sm font-bold text-sidebar-primary-foreground"style={{color: "black"}}>Inventario</h1>
+          <p className="text-xs text-sidebar-foreground/60 text-black" style={{color: "black"}}>Panel Admin</p>
         </div>
       </div>
       <nav className="flex-1 px-3 py-4">

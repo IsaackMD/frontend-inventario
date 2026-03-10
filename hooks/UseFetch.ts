@@ -114,3 +114,27 @@ export function useAddCategory() {
     },
   });
 }
+
+interface DeleteCategory {
+  Id: string;
+  isDelete: boolean;
+}
+
+export function UseStatusCategory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (body: DeleteCategory) => {
+      const {data} = await api.put("api/Categories/status", body);
+      const {value, error, IsSuccess} = data;
+
+      if(!IsSuccess) console.log(error);
+
+      return value
+    },
+    onSuccess: () => {
+      // Invalida la query de productos para que se recargue automáticamente
+      queryClient.invalidateQueries({ queryKey: ["Categories"] });
+    },
+  });
+}

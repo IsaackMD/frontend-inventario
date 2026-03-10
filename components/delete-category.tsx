@@ -9,21 +9,22 @@ import {
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Category } from "@/lib/inventory-store"
 
 
-interface AddCategoryProps {
+interface DeleteCategoryProps {
   deleteTarget: any
   setDeleteTarget: (value: any) => void
   deleteTargetProductCount: number
-  deleteTargetCategory: string
+  deleteTargetCategory: Category
   handleDelete: () => void
 }
 
-export function AddCategory({
+export function DeleteCategory({
     deleteTarget,setDeleteTarget,
     deleteTargetProductCount,deleteTargetCategory,
     handleDelete
-}: AddCategoryProps) {
+}: DeleteCategoryProps) {
 
     {/* Delete Confirmation Dialog */}
     return (
